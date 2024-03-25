@@ -7,15 +7,13 @@ class SnakeGame:
     def __init__(self, rows: int, cols: int):
         self.rows = rows
         self.cols = cols
+        self.matrix = [[0 for _ in range(self.cols + 1)] for __ in range(self.rows + 1)]
 
         self.score = 0
-        self.snake = [[12,12], [12, 13], [13 ,13]]
+        self.snake = [[-1, -1] for _ in range(3)]
         self.prev_tail = self.snake[-1]
         self.dir = [0, -1]
-
-        self.matrix = [[0 for _ in range(self.cols)] for __ in range(self.rows)]
-        for piece in self.snake:
-            self.update_matrix(piece, "add")
+        self.randomize_snake()
 
         self.apple = self.snake[0]
         self.randomize_apple()
@@ -85,11 +83,44 @@ class SnakeGame:
             self.apple = [randint(0, self.rows - 1), randint(0, self.cols - 1)]
 
     def randomize_snake(self):
-        self.dir = SnakeGame.directions[randint(0,3)]
+        valid = False
 
-        self.snake[0] = [randint(self.rows), randint[self.cols]]
+        while not valid:
+            valid = True
 
+            self.dir = SnakeGame.directions[randint(0,3)]
+            self.snake[0] = [randint(0, self.rows), randint(0, self.cols)]
+
+            # Generate the rest of the pieces
+            for n in range(1, 3):
+                d = SnakeGame.directions[randint(0,3)]
+                i = self.snake[n - 1][0] + d[0]
+                j = self.snake[n - 1][1] + d[1]
+                new_piece = [i,j]
+                
+
+                if ((0 <= new_piece[0] and new_piece[0] < self.rows) and (0 <= new_piece[1] and new_piece[1] < self.cols)):
+                    if new_piece not in self.snake:
+                        self.snake[n] = [i, j]
+                else:
+                    valid = False
+                    break
+            
+            # Ensure intial movement is valid
+            i = self.snake[0][0] + self.dir[0]
+            j = self.snake[0][1] + self.dir[1]
+            new_piece = [i, j]
+
+            if not ((0 <= new_piece[0] and new_piece[0] < self.rows) and (0 <= new_piece[1] and new_piece[1] < self.cols)):
+                valid = False
+            elif new_piece in self.snake:
+                valid = False
+
+        self.snake = deepcopy(self.snake)
         
+        for piece in self.snake:
+            self.update_matrix(piece, "add")
+            
 
     def check_apple(self):
         if self.snake[0][0] == self.apple[0] and self.snake[0][1] == self.apple[1]:

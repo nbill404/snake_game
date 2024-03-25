@@ -62,8 +62,13 @@ class App:
                 game.change_dir(2)
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 game.change_dir(3)
-            elif keys[pygame.K_r]:
-                game = SnakeGame(rows, cols)
+            
+            events = pygame.event.get()
+            for e in events:
+                if e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_r: 
+                        game = SnakeGame(rows, cols)
+                        game_end_text = None
 
             self.draw(win)
             grid.draw(win)
