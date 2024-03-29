@@ -14,8 +14,6 @@ class Node:
 
     def __eq__(self, other) -> bool:
         return self.pos[0] == other.pos[0] and self.pos[1] == other.pos[1]
-    
-
 
 def search(matrix, start, end):
     nodes_open = []
@@ -60,7 +58,18 @@ def search(matrix, start, end):
                 heapq.heappush(nodes_open, new_node)
     
     return None
-            
+
+def get_next(matrix, start, end):
+    end = search(matrix, start, end)
+    l = [end.pos]
+
+    while end is not None:
+        l.append(end.pos)
+        end = end.predecessor
+    
+    return l[-2]
+
+
 if __name__ == "__main__":
 
     m = [[0 for _ in range(8)] for __ in range(10)]
@@ -68,10 +77,8 @@ if __name__ == "__main__":
     for j in range(1, 8):
         m[4][j] = 1
 
-    end = search(m, [5, 5], [3, 1])
+    
 
-    while end is not None:
-        print(end.pos)
-        end = end.predecessor
+
 
 

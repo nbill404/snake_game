@@ -1,6 +1,9 @@
 import pygame
+import pathfind
 from grid import Grid
 from snakegame import SnakeGame
+from math import sin, cos, atan2
+from button import Button
 
 class App:
 
@@ -19,6 +22,9 @@ class App:
 
         grid = Grid(rows, cols, (240, 80, 800, 600))
         game = SnakeGame(rows, cols)
+
+        print(game.snake)
+
         self.setup_grid(grid)
 
         font = pygame.font.SysFont("Calibri", 50)
@@ -27,32 +33,46 @@ class App:
         font = pygame.font.SysFont("Calibri", 30)
         score_text = font.render("Score: " + str(game.score), True, (0,0,0))
 
-
         game_tick = 0
         game_end_text = None
 
+        button = Button((100, 100, 100, 40), "Click", (245, 33, 120))
+
+        ai_running = False
+
         while running:
-            clock.tick(60)
+            clock.tick()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
-            if not game.game_over and not game.win:
+            if game.start:
                 # Game updates every 250ms
                 game_tick += clock.tick(60)
 
                 if game_tick >= 250:
+
+                    if ai_running:
+                        next = pathfind.get_next(game.matrix, game.snake[0], game.apple)
+                        game.dir = (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
+
+
                     game.update()
                     game_tick = 0
 
                     score_text = font.render("Score: " + str(game.score * 100), True, (0,0,0))
-            elif game.game_over:
+            
+            if game.game_over:
                 game_end_text = font.render("You lose", True, (0,0,0))
             elif game.win:
                 game_end_text = font.render("You win!", True, (0,0,0))
 
+
+
+
             keys = pygame.key.get_pressed()
+
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 game.change_dir(0)
@@ -62,9 +82,18 @@ class App:
                 game.change_dir(2)
             elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 game.change_dir(3)
+            elif keys[pygame.K_SPACE]:
+                game.start = True
             
             events = pygame.event.get()
             for e in events:
+                if e.type == pygame.QUIT:
+                    running = False
+
+                if e.type == pygame.MOUSEBUTTONDOWN:
+                    if button.clicked():
+                        ai_running = True
+
                 if e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_r: 
                         game = SnakeGame(rows, cols)
@@ -75,6 +104,7 @@ class App:
             self.render_game(win, game, grid)
             win.blit(title_text, (540, 20))
             win.blit(score_text, (1050, 100))
+            button.draw(win)
 
             if game_end_text is not None:
                 x = 550
@@ -106,6 +136,7 @@ class App:
         x = grid.rect.left + apple[1] * w
         y = grid.rect.top + apple[0] * h
 
+        # Apple
         pygame.draw.rect(win, (219, 46, 20), (x, y, w + 1, h))
 
         border = (
@@ -115,15 +146,27 @@ class App:
             ((x, y + h), (x + w, y + h))
             )
 
+        # Apple Border
         for (start, end) in border:
             pygame.draw.line(win, (241, 255, 38), start, end, width=2)
 
+        # Snake
         for piece in snake:
             x = grid.rect.left + piece[1] * grid.cell_width
             y = grid.rect.top + piece[0] * grid.cell_height
 
             pygame.draw.rect(win, (105, 20, 7), (x, y, grid.cell_width + 1, grid.cell_height))
 
+        x = grid.rect.left + head[1] * grid.cell_width
+        y = grid.rect.top + head[0] * grid.cell_height
+        x += game.dir[1] * (grid.cell_width - 10)
+        y += game.dir[0] * (grid.cell_height - 10) 
+        
+        pygame.draw.rect(win, (0, 0, 0), (x, y, 10, 10))
+        # pygame.draw.rect(win, (0, 0, 0), (x + eye2x, y + eye2y, 10, 10))
+
+    def rotate(self, px, py, cx, cy, angle):
+        pass
 
         
 

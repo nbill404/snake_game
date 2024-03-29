@@ -99,9 +99,6 @@ class SnakeGame:
         self.matrix = deepcopy(matrix)
         self.dir = dir
 
-        print(self.snake)
-        print(self.dir)
-
     def create_body(self, length, snake, next, matrix):
         if length == 0:
             return True
