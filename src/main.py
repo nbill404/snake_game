@@ -1,9 +1,11 @@
 import pygame
 import pathfind
 from grid import Grid
-from snakegame import SnakeGame
+from snakegame import SnakeGame, SnakePredetermined
 from math import sin, cos, atan2
 from button import Button
+from textbox import Textbox
+from genetic import GeneticSnakeSolver
 
 class App:
 
@@ -14,116 +16,126 @@ class App:
 
     def run(self) -> None:
         win = pygame.display.set_mode((self.width, self.height))
-        running = True
+        self.running = True
         clock = pygame.time.Clock()
+        game_tick = 0
 
         rows = 18
         cols = 24
 
         grid = Grid(rows, cols, (240, 80, 800, 600))
         game = SnakeGame(rows, cols)
-
-        print(game.snake)
-
         self.setup_grid(grid)
+        self.game_mode = 2 
+        
+        button1 = Button((75, 100, 100, 40), "Start", (245, 33, 120))
+        button2 = Button((75, 200, 100, 40), "A*", (255, 23, 34)) 
+        button3 = Button((75, 300, 100, 40), "Genetic Algorithm", (123, 33, 97))
 
-        font = pygame.font.SysFont("Calibri", 50)
-        title_text = font.render("Snake Game", True, (0,0,0))
+        buttons = [button1, button2, button3]
 
-        font = pygame.font.SysFont("Calibri", 30)
-        score_text = font.render("Score: " + str(game.score), True, (0,0,0))
+        drawables = [button1, button2, button3, Textbox((540, 20, 0, 0), "Snake Game"), Textbox((1050, 100, 0, 0), "Score: " + str(game.score))]
+        
+        # self.geneticAi = None
+        self.geneticAi = self.geneticAi = GeneticAI(game.rows, game.cols, 1000)
 
-        game_tick = 0
-        game_end_text = None
-
-        button = Button((100, 100, 100, 40), "Click", (245, 33, 120))
-
-        ai_running = False
-
-        while running:
-            clock.tick()
+        while self.running:
+            game_tick += clock.tick(60)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
-            if game.start:
-                # Game updates every 250ms
-                game_tick += clock.tick(60)
-
-                if game_tick >= 250:
-
-                    if ai_running:
-                        next = pathfind.get_next(game.matrix, game.snake[0], game.apple)
-                        if next:
-                            game.dir = (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
-                        else:
-                            game.dir = (0, 1)
-
-
-                    game.update()
-                    game_tick = 0
-
-                    score_text = font.render("Score: " + str(game.score * 100), True, (0,0,0))
-            
-            if game.game_over:
-                game_end_text = font.render("You lose", True, (0,0,0))
-            elif game.win:
-                game_end_text = font.render("You win!", True, (0,0,0))
-
-            keys = pygame.key.get_pressed()
-
-            if keys[pygame.K_UP] or keys[pygame.K_w]:
-                game.change_dir(0)
-            elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
-                game.change_dir(1)
-            elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
-                game.change_dir(2)
-            elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-                game.change_dir(3)
-            elif keys[pygame.K_SPACE]:
-                game.start = True
-            elif keys[pygame.K_r]:
-                game = SnakeGame(rows, cols)
-                game_end_text = None
-
-            
-            events = pygame.event.get()
-            for e in events:
-                if e.type == pygame.QUIT:
-                    running = False
-
-                if e.type == pygame.MOUSEBUTTONDOWN:
-                    if button.clicked():
-                        ai_running = True
-
+ 
+            if game_tick >= 250: # Game updates every 1/4th second
+                match self.game_mode:
+                    case 0:
+                        game.update()
+                    case 1:
+                        game.dir = self.get_ai_move(game)
+                        game.update()
+                    case 2:
+                        self.geneticAi.update()
+                        game = self.geneticAi.games[0]
                         
+                game_tick = 0
 
-            self.draw(win)
+            self.app_controls(game, buttons)
+
+            if self.game_mode == 0:
+                self.player_controls(game)
+    
+                if game.game_over:
+                    print("You lose")
+                elif game.win:
+                    print("You win")
+
+            self.draw(win, drawables)
             grid.draw(win)
-            self.render_game(win, game, grid)
-            win.blit(title_text, (540, 20))
-            win.blit(score_text, (1050, 100))
-            button.draw(win)
 
-            if game_end_text is not None:
-                x = 550
-                x_offset = 50
-                y = 300
-                y_offset = 15
-
-                pygame.draw.rect(win, (255,255,255), (x, y, 200, 60))
-                win.blit(game_end_text, (x + x_offset, y + y_offset))
-
+            if self.game_mode == 2:
+                for game in self.geneticAi.games:
+                    if game.start:
+                        self.render_game(win, game, grid)
+            else:
+                self.render_game(win, game, grid)
 
             pygame.display.update()
+
+    def app_controls(self, game, buttons):
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_SPACE]:
+            game.start = True
+        elif keys[pygame.K_r]:
+            game.reset()
+
+        events = pygame.event.get()
+
+        for e in events:
+            if e.type == pygame.QUIT:
+                self.running = False
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                if buttons[0].clicked():
+                    self.game_mode = 0
+                    game.start = True
+                elif buttons[1].clicked():
+                    self.game_mode = 1
+                elif buttons[2].clicked():
+                    self.game_mode = 2
+                    self.geneticAi = GeneticAI(game.rows, game.cols)
+
+    def player_controls(self, game):  
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            game.change_dir(0)
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            game.change_dir(1)
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            game.change_dir(2)
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            game.change_dir(3)
+
+
+    def get_ai_move(self, game):
+        # A* algorithm
+        next = pathfind.get_next(game.matrix, game.snake[0], game.apple)
+        if next:
+            return (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
+        else:
+            # Picks direction if path is not found 
+            return (0 , 1)
+
 
     def setup_grid(self, grid: Grid):
         grid.set_display(vertical=False, horizontal=False)
         grid.set_colour(primary=(19, 133, 13), secondary=(51, 191, 44))
 
-    def draw(self, win : pygame.surface.Surface) -> None:
+    def draw(self, win : pygame.surface.Surface, drawables) -> None:
         win.fill(self.bg_colour)
+
+        for e in drawables:
+            e.draw(win)
 
     def render_game(self, win: pygame.surface.Surface, game: SnakeGame, grid: Grid):
         apple = game.apple
@@ -170,6 +182,63 @@ class App:
         pass
 
         
+class GeneticAI:
+
+    def __init__(self, rows, cols, pop_size = 10, sequence_length = 1000):
+        self.rows = rows
+        self.cols = cols
+        self.pop_size = pop_size
+        self.sequence_length = sequence_length
+
+        self.genetic_ai = GeneticSnakeSolver(self.pop_size, self.sequence_length) 
+        self.games = [SnakePredetermined(self.rows, self.cols) for _ in range(self.pop_size)]
+
+        self.reset_games()
+
+    
+    def reset_games(self):
+        self.step = 0
+        self.distances = [0 for _ in range(self.pop_size)]
+        self.scores = [0 for _ in range(self.pop_size)]
+
+        for game in self.games:
+            game.reset()
+            game.start = True
+
+
+    def update(self):
+        over = True
+
+        print("Step:", self.step)
+
+        for i in range(self.pop_size):          
+            if self.games[i].start:
+                over = False
+
+                d = int(self.genetic_ai.pop[i][self.step * 2: self.step * 2 + 2], 2)
+
+                self.games[i].dir = SnakeGame.directions[d]
+                self.games[i].update()
+
+                self.distances[i] += 1
+                self.scores[i] = self.games[i].score
+
+        self.step += 1
+
+        # All games have terminated
+        if over:
+            snakes = []
+            apples = []
+            for i in range(len(self.games)):
+                snakes.append(self.games[i].snake[0])
+                apples.append(self.games[i].apple)
+
+
+            self.genetic_ai.next_generation(self.step, snakes, apples, self.distances, self.scores)
+            self.reset_games()
+
+            print("All games terminated")
+            print("Starting generation: " + str(self.genetic_ai.gen))
 
 
 

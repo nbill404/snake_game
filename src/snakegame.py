@@ -2,12 +2,15 @@ from random import randint, shuffle
 from copy import deepcopy
 
 class SnakeGame:
-    directions = ((-1, 0), (1, 0), (0, -1), (0, 1)) # left, right, Up, down, 
+    directions = ((-1, 0), (1, 0), (0, -1), (0, 1)) # Up, down, left, right
 
     def __init__(self, rows: int, cols: int):
         self.rows = rows
         self.cols = cols
 
+        self.reset()
+
+    def reset(self):
         self.score = 0
         self.randomize_snake()
         self.prev_tail = self.snake[-1]
@@ -134,7 +137,6 @@ class SnakeGame:
                 
         return False
              
-
     def is_inbounds(self, pos):
         return (0 <= pos[0] and pos[0] < self.rows) and (0 <= pos[1] and pos[1] < self.cols)
             
@@ -145,3 +147,42 @@ class SnakeGame:
             self.snake.append(self.prev_tail)
             self.update_matrix(self.prev_tail, "add")
             self.randomize_apple()
+
+class SnakePredetermined(SnakeGame):
+
+    def __init__(self, rows: int, cols: int):
+        self.apple_num = 0
+        self.apples = []
+
+        with open("sequence.txt", "r") as file:
+            for line in file:
+                txt = line.strip()
+                self.apples.append(list(map(int, txt.split(","))))
+
+        super().__init__(rows, cols)
+
+
+    def reset(self):
+        self.apple_num = 0
+        self.randomize_apple()
+
+        self.score = 0
+        self.randomize_snake()
+        self.prev_tail = self.snake[-1]
+
+        self.start = False
+        self.game_over = False
+        self.win = False
+
+    def randomize_snake(self, length=3):
+        self.matrix = [[0 for _ in range(self.cols)] for __ in range(self.rows)]
+        self.dir = (-1, 0)
+        self.snake = [[8,10], [9, 10], [9, 11]]
+        self.update_matrix(self.snake[0], "add")
+        self.update_matrix(self.snake[1], "add")
+        self.update_matrix(self.snake[2], "add")
+
+
+    def randomize_apple(self):
+        self.apple = self.apples[self.apple_num]
+        self.apple_num += 1

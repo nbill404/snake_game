@@ -68,7 +68,10 @@ def get_next(matrix, start, end):
         while end is not None:
             l.append(end.pos)
             end = end.predecessor
-    
+
+        if len(l) < 2:
+            return None
+
         return l[-2]
     else:
         return None
