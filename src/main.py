@@ -55,7 +55,10 @@ class App:
 
                     if ai_running:
                         next = pathfind.get_next(game.matrix, game.snake[0], game.apple)
-                        game.dir = (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
+                        if next:
+                            game.dir = (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
+                        else:
+                            game.dir = (0, 1)
 
 
                     game.update()
@@ -68,11 +71,7 @@ class App:
             elif game.win:
                 game_end_text = font.render("You win!", True, (0,0,0))
 
-
-
-
             keys = pygame.key.get_pressed()
-
 
             if keys[pygame.K_UP] or keys[pygame.K_w]:
                 game.change_dir(0)
@@ -84,6 +83,10 @@ class App:
                 game.change_dir(3)
             elif keys[pygame.K_SPACE]:
                 game.start = True
+            elif keys[pygame.K_r]:
+                game = SnakeGame(rows, cols)
+                game_end_text = None
+
             
             events = pygame.event.get()
             for e in events:
@@ -94,10 +97,7 @@ class App:
                     if button.clicked():
                         ai_running = True
 
-                if e.type == pygame.KEYDOWN:
-                    if e.key == pygame.K_r: 
-                        game = SnakeGame(rows, cols)
-                        game_end_text = None
+                        
 
             self.draw(win)
             grid.draw(win)
@@ -157,10 +157,11 @@ class App:
 
             pygame.draw.rect(win, (105, 20, 7), (x, y, grid.cell_width + 1, grid.cell_height))
 
-        x = grid.rect.left + head[1] * grid.cell_width
-        y = grid.rect.top + head[0] * grid.cell_height
-        x += game.dir[1] * (grid.cell_width - 10)
-        y += game.dir[0] * (grid.cell_height - 10) 
+        c = (grid.cell_width - 10) / 2
+        x = (grid.rect.left + c) + head[1] * grid.cell_width
+        y = (grid.rect.top + c) + head[0] * grid.cell_height
+        x += game.dir[1] * c
+        y += game.dir[0] * c
         
         pygame.draw.rect(win, (0, 0, 0), (x, y, 10, 10))
         # pygame.draw.rect(win, (0, 0, 0), (x + eye2x, y + eye2y, 10, 10))

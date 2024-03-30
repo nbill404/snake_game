@@ -21,9 +21,11 @@ class SnakeGame:
         
     def update(self):
         if self.check_win():
+            self.start = False
             self.win = True
             return
         elif not self.is_valid():
+            self.start = False
             self.game_over = True
             return
 
@@ -45,6 +47,11 @@ class SnakeGame:
 
         self.snake[0][0] += self.dir[0]
         self.snake[0][1] += self.dir[1]
+
+        if not self.is_valid():
+            self.start = False
+            self.game_over = True
+            return
 
         self.update_matrix(self.snake[0], "add")
 
@@ -89,7 +96,7 @@ class SnakeGame:
             next = [head[0] + dir[0], head[1] + dir[1]]
 
         snake = [head]
-        matrix = [[0 for _ in range(self.cols + 1)] for __ in range(self.rows + 1)]
+        matrix = [[0 for _ in range(self.cols)] for __ in range(self.rows)]
         matrix[head[0]][head[1]] = 1
 
         # Uses DFS algorithm to create snake body

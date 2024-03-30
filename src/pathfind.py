@@ -61,13 +61,17 @@ def search(matrix, start, end):
 
 def get_next(matrix, start, end):
     end = search(matrix, start, end)
-    l = [end.pos]
-
-    while end is not None:
-        l.append(end.pos)
-        end = end.predecessor
     
-    return l[-2]
+    if end:
+        l = [end.pos]
+
+        while end is not None:
+            l.append(end.pos)
+            end = end.predecessor
+    
+        return l[-2]
+    else:
+        return None
 
 
 if __name__ == "__main__":
