@@ -2,6 +2,8 @@
 import heapq
 from math import dist
 
+from snakegame import SnakeGame
+
 class Node:
 
     def __init__(self, pos, f,  predecessor = None):
@@ -76,6 +78,22 @@ def get_next(matrix, start, end):
     else:
         return None
 
+
+def get_ai_move(game: SnakeGame):
+    # A* algorithm
+    next = get_next(game.matrix, game.snake[0], game.apple)
+    if next:
+        return (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
+    else:
+        # Picks direction if path is not found
+
+        next = game.snake[0]
+        for d in SnakeGame.directions:
+            if game.is_inbounds([next[0] + d[0], next[1] + d[1]]):
+                if game.matrix[next[0] + d[0]][next[1] + d[1]] == 0:
+                    return d
+            
+        return (0 , 1)
 
 if __name__ == "__main__":
 

@@ -14,7 +14,7 @@ class NeuralNetwork:
             Tanh()
         ]
 
-        self.epochs = 10000
+        self.epochs = 10
         self.learning_rate = 0.1
 
     def run(self):
@@ -36,9 +36,11 @@ class NeuralNetwork:
                     grad = layer.backward(grad, self.learning_rate)
         
             error /= len(self.X)
-            # print('%d/%d, error %f' % (e * 1, self.epochs, error))
+            print('%d/%d, error %f' % (e * 1, self.epochs, error))
 
     def mse(self, y_true, y_pred):
+        print(y_true, y_pred)
+
         return np.mean(np.power(y_true - y_pred,2))
     
     def mse_prime(self,  y_true, y_pred):

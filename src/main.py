@@ -1,11 +1,13 @@
 import pygame
-import pathfind
+
+from pathfind import get_ai_move
 from grid import Grid
-from snakegame import SnakeGame, SnakePredetermined
-from math import sin, cos, atan2
+from snakegame import SnakeGame
 from button import Button
 from textbox import Textbox
-from genetic import GeneticSnakeSolver
+from genetic import GeneticAI
+from neuralai import NeuralAi, convert_x, convert_y
+from random import randint
 
 class App:
 
@@ -14,19 +16,21 @@ class App:
         self.height = height
         self.bg_colour = bg_colour
 
+        self.rows = 18
+        self.cols = 24
+
+        self.running = True
+
+
     def run(self) -> None:
         win = pygame.display.set_mode((self.width, self.height))
-        self.running = True
         clock = pygame.time.Clock()
         game_tick = 0
 
-        rows = 18
-        cols = 24
-
-        grid = Grid(rows, cols, (240, 80, 800, 600))
-        game = SnakeGame(rows, cols)
+        grid = Grid(self.rows, self.cols, (240, 80, 800, 600))
+        game = SnakeGame(self.rows, self.cols, 6)
         self.setup_grid(grid)
-        self.game_mode = 2 
+        self.game_mode = 3
         
         button1 = Button((75, 100, 100, 40), "Start", (245, 33, 120))
         button2 = Button((75, 200, 100, 40), "A*", (255, 23, 34)) 
@@ -36,26 +40,47 @@ class App:
 
         drawables = [button1, button2, button3, Textbox((540, 20, 0, 0), "Snake Game"), Textbox((1050, 100, 0, 0), "Score: " + str(game.score))]
         
-        # self.geneticAi = None
-        self.geneticAi = self.geneticAi = GeneticAI(game.rows, game.cols, 1000)
+        match self.game_mode:
+            case 0:
+                pass
+            case 1:
+                pass
+            case 2:
+                self.geneticAi = GeneticAI(game.rows, game.cols, 1000)
+            case 3:
+                self.neuralAi = NeuralAi(convert_x(game), convert_y(game.dir))
+                self.train()
+                game.start = True
 
         while self.running:
             game_tick += clock.tick(60)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
+                    self.running = False
  
             if game_tick >= 250: # Game updates every 1/4th second
                 match self.game_mode:
                     case 0:
-                        game.update()
+                        if game.start:
+                            game.update()
                     case 1:
-                        game.dir = self.get_ai_move(game)
+                        game.dir = get_ai_move(game)
                         game.update()
                     case 2:
                         self.geneticAi.update()
                         game = self.geneticAi.games[0]
+                    case 3:
+                        self.neuralAi.predict(convert_x(game), convert_y(get_ai_move(game)))
+                        game.dir = self.neuralAi.output
+                        game.update()
+
+                        print(self.neuralAi.output, self.neuralAi.error)
+
+                        if not game.start:
+                            game.reset()
+                            game.start = True
+                            print("Game Reset")
                         
                 game_tick = 0
 
@@ -115,16 +140,18 @@ class App:
             game.change_dir(2)
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             game.change_dir(3)
+    
+    def train(self):
+        # Train Ai on multiple starting positions
+        for i in range(100):
+            print("Game: ", i)
+            game = SnakeGame(self.rows, self.cols)
 
+            self.neuralAi.x = convert_x(game)
+            self.neuralAi.y = convert_y(get_ai_move(game))
+            self.neuralAi.train()
 
-    def get_ai_move(self, game):
-        # A* algorithm
-        next = pathfind.get_next(game.matrix, game.snake[0], game.apple)
-        if next:
-            return (next[0] - game.snake[0][0], next[1] - game.snake[0][1])
-        else:
-            # Picks direction if path is not found 
-            return (0 , 1)
+            game.reset()
 
 
     def setup_grid(self, grid: Grid):
@@ -178,67 +205,9 @@ class App:
         pygame.draw.rect(win, (0, 0, 0), (x, y, 10, 10))
         # pygame.draw.rect(win, (0, 0, 0), (x + eye2x, y + eye2y, 10, 10))
 
-    def rotate(self, px, py, cx, cy, angle):
-        pass
-
         
-class GeneticAI:
-
-    def __init__(self, rows, cols, pop_size = 10, sequence_length = 1000):
-        self.rows = rows
-        self.cols = cols
-        self.pop_size = pop_size
-        self.sequence_length = sequence_length
-
-        self.genetic_ai = GeneticSnakeSolver(self.pop_size, self.sequence_length) 
-        self.games = [SnakePredetermined(self.rows, self.cols) for _ in range(self.pop_size)]
-
-        self.reset_games()
-
-    
-    def reset_games(self):
-        self.step = 0
-        self.distances = [0 for _ in range(self.pop_size)]
-        self.scores = [0 for _ in range(self.pop_size)]
-
-        for game in self.games:
-            game.reset()
-            game.start = True
 
 
-    def update(self):
-        over = True
-
-        print("Step:", self.step)
-
-        for i in range(self.pop_size):          
-            if self.games[i].start:
-                over = False
-
-                d = int(self.genetic_ai.pop[i][self.step * 2: self.step * 2 + 2], 2)
-
-                self.games[i].dir = SnakeGame.directions[d]
-                self.games[i].update()
-
-                self.distances[i] += 1
-                self.scores[i] = self.games[i].score
-
-        self.step += 1
-
-        # All games have terminated
-        if over:
-            snakes = []
-            apples = []
-            for i in range(len(self.games)):
-                snakes.append(self.games[i].snake[0])
-                apples.append(self.games[i].apple)
-
-
-            self.genetic_ai.next_generation(self.step, snakes, apples, self.distances, self.scores)
-            self.reset_games()
-
-            print("All games terminated")
-            print("Starting generation: " + str(self.genetic_ai.gen))
 
 
 

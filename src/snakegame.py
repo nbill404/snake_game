@@ -4,15 +4,15 @@ from copy import deepcopy
 class SnakeGame:
     directions = ((-1, 0), (1, 0), (0, -1), (0, 1)) # Up, down, left, right
 
-    def __init__(self, rows: int, cols: int):
+    def __init__(self, rows: int, cols: int, length: int = 3):
         self.rows = rows
         self.cols = cols
 
-        self.reset()
+        self.reset(length)
 
-    def reset(self):
+    def reset(self, length: int = 3):
         self.score = 0
-        self.randomize_snake()
+        self.randomize_snake(length)
         self.prev_tail = self.snake[-1]
 
         self.apple = self.snake[0]
@@ -159,10 +159,10 @@ class SnakePredetermined(SnakeGame):
                 txt = line.strip()
                 self.apples.append(list(map(int, txt.split(","))))
 
-        super().__init__(rows, cols)
+        super().__init__(rows, cols, 0)
 
 
-    def reset(self):
+    def reset(self, length = 0):
         self.apple_num = 0
         self.randomize_apple()
 
