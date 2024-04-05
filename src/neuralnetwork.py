@@ -14,7 +14,7 @@ class NeuralNetwork:
             Tanh()
         ]
 
-        self.epochs = 10
+        self.epochs = 1000
         self.learning_rate = 0.1
 
     def run(self):

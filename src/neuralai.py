@@ -10,10 +10,10 @@ class NeuralAi:
     def __init__(self, X, Y) -> None:
         """
         Inputs:
-        - 18 * 24 = 432: Position of apple 
+        - 2: Position of apple 
         - 18 * 24 = 432: Position of snake body on grid
         - 4 : Each direction
-        Total = 868
+        Total = 438
 
 
         Outputs:
@@ -27,11 +27,9 @@ class NeuralAi:
         self.output = (-1, 0)
         
         self.network = [
-            Dense(868, 128),
+            Dense(438, 16),
             Tanh(),
-            Dense(128, 128),
-            Tanh(),
-            Dense(128, 4),
+            Dense(16, 4),
             Tanh()
         ]
 
@@ -81,6 +79,7 @@ class NeuralAi:
 
             # print('%d/%d, error %f' % (e * 1, self.epochs, error))
 
+        self.output = output
         self.error = error
         
     def update_output(self, output):
@@ -115,16 +114,25 @@ class NeuralAi:
 
     
 def convert_x(game: SnakeGame):
-        pos = game.apple
+        x = np.zeros(438)
+        # Apple
+        x[0] = game.apple[0]
+        x[1] = game.apple[1]
+        
+        # Head
+        x[2] = game.snake[0][0]
+        x[3] = game.snake[0][1]
 
-        x = np.zeros(868)
-        x[pos[0] * game.rows + pos[1]] = 1
+        # Direction
+        x[4] = game.dir[0]
+        x[5] = game.dir[1]
+
+        offset = 6
 
         for pos in game.snake:
-            x[pos[0] * game.rows + pos[1] + 432] = 1
+            x[pos[0] * game.rows + pos[1] + offset] = 1
 
-        x[862 + convert_dir(game.dir)]
-        x = np.reshape(x, (1, 868, 1))
+        x = np.reshape(x, (1, 438, 1))
 
         return x
 
@@ -149,10 +157,26 @@ def convert_dir(dir):
         return i
 
 
+def create_network(neuralAi):
+    # Train Ai on multiple positions
+    for i in range(10000):
+        print("Game: {}".format(i))
+
+        game = SnakeGame(18, 24)
+
+        neuralAi.X = convert_x(game)
+        neuralAi.Y = convert_y(get_ai_move(game))
+        neuralAi.train()
+        game.reset()
+
+        print("Error: {} \nOutput:\n{} \nIntended Move:\n{}".format(neuralAi.error, neuralAi.output, neuralAi.Y))
+
+    neuralAi.save()
+
 if __name__ == "__main__":
     game = SnakeGame(18, 24)
     neuralAi = NeuralAi(convert_x(game), convert_y(game.dir))
-    neuralAi.train()
-    # neuralAi.predict(convert_x(game), convert_y(game.dir))
-    # neuralAi.save()
-    neuralAi.load()
+    # neuralAi.train()
+    # print(neuralAi.output, neuralAi.error, neuralAi.Y)
+
+    create_network(neuralAi)

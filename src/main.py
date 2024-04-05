@@ -49,7 +49,7 @@ class App:
                 self.geneticAi = GeneticAI(game.rows, game.cols, 1000)
             case 3:
                 self.neuralAi = NeuralAi(convert_x(game), convert_y(game.dir))
-                self.train()
+                self.neuralAi.load()
                 game.start = True
 
         while self.running:
@@ -141,17 +141,7 @@ class App:
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             game.change_dir(3)
     
-    def train(self):
-        # Train Ai on multiple starting positions
-        for i in range(100):
-            print("Game: ", i)
-            game = SnakeGame(self.rows, self.cols)
 
-            self.neuralAi.x = convert_x(game)
-            self.neuralAi.y = convert_y(get_ai_move(game))
-            self.neuralAi.train()
-
-            game.reset()
 
 
     def setup_grid(self, grid: Grid):
