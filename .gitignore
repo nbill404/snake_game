@@ -1,4 +1,6 @@
 __pycache__/
-sequence.txt
-*.pyc
 network/
+*.pyc
+test.py
+sequence.txt
+

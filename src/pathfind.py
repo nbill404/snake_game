@@ -11,7 +11,7 @@ class Node:
         self.f = f
         self.predecessor = predecessor      
     
-    def __lt__(self, other):
+    def __lt__(self, other) -> bool:
         return self.f < other.f
 
     def __eq__(self, other) -> bool:
@@ -79,7 +79,7 @@ def get_next(matrix, start, end):
         return None
 
 
-def get_ai_move(game: SnakeGame):
+def get_ai_move(game: SnakeGame) -> tuple[int]:
     # A* algorithm
     next = get_next(game.matrix, game.snake[0], game.apple)
     if next:
@@ -89,11 +89,13 @@ def get_ai_move(game: SnakeGame):
 
         next = game.snake[0]
         for d in SnakeGame.directions:
-            if game.is_inbounds([next[0] + d[0], next[1] + d[1]]):
+            if game.is_inbounds((next[0] + d[0], next[1] + d[1])):
                 if game.matrix[next[0] + d[0]][next[1] + d[1]] == 0:
+                    
                     return d
-            
-        return (0 , 1)
+        
+        print("test")
+        return (0 , -1)
 
 if __name__ == "__main__":
 

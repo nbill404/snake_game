@@ -7,6 +7,7 @@ from button import Button
 from textbox import Textbox
 from genetic import GeneticAI
 from neuralai import NeuralAi, convert_x, convert_y
+from neatai import NeatAI
 from random import randint
 
 class App:
@@ -30,7 +31,7 @@ class App:
         grid = Grid(self.rows, self.cols, (240, 80, 800, 600))
         game = SnakeGame(self.rows, self.cols, 6)
         self.setup_grid(grid)
-        self.game_mode = 3
+        
         
         button1 = Button((75, 100, 100, 40), "Start", (245, 33, 120))
         button2 = Button((75, 200, 100, 40), "A*", (255, 23, 34)) 
@@ -40,17 +41,21 @@ class App:
 
         drawables = [button1, button2, button3, Textbox((540, 20, 0, 0), "Snake Game"), Textbox((1050, 100, 0, 0), "Score: " + str(game.score))]
         
+        self.game_mode = 4
+
         match self.game_mode:
-            case 0:
+            case 0: # Player control
+                game.start = False
+            case 1: # A* Pathfinding
                 pass
-            case 1:
-                pass
-            case 2:
+            case 2: # Genetic Algorithm
                 self.geneticAi = GeneticAI(game.rows, game.cols, 1000)
-            case 3:
+            case 3: # Neural Network
                 self.neuralAi = NeuralAi(convert_x(game), convert_y(game.dir))
-                self.neuralAi.load()
+                # self.neuralAi.load()
                 game.start = True
+            case 4: # NEAT Algorithm
+                self.neatAi = NeatAI()
 
         while self.running:
             game_tick += clock.tick(60)
@@ -59,7 +64,7 @@ class App:
                 if event.type == pygame.QUIT:
                     self.running = False
  
-            if game_tick >= 250: # Game updates every 1/4th second
+            if game_tick >= 0: # Game updates every 1/4th second
                 match self.game_mode:
                     case 0:
                         if game.start:
@@ -70,17 +75,21 @@ class App:
                     case 2:
                         self.geneticAi.update()
                         game = self.geneticAi.games[0]
-                    case 3:
+                    case 3: 
+                        self.neuralAi.x = convert_x(game)
+                        self.neuralAi.y = convert_y(get_ai_move(game))
+                        self.neuralAi.train()
+
                         self.neuralAi.predict(convert_x(game), convert_y(get_ai_move(game)))
                         game.dir = self.neuralAi.output
                         game.update()
-
-                        print(self.neuralAi.output, self.neuralAi.error)
 
                         if not game.start:
                             game.reset()
                             game.start = True
                             print("Game Reset")
+                    case 4:
+                        self.neatAi.update()
                         
                 game_tick = 0
 
@@ -99,6 +108,10 @@ class App:
 
             if self.game_mode == 2:
                 for game in self.geneticAi.games:
+                    if game.start:
+                        self.render_game(win, game, grid)
+            elif self.game_mode == 4:
+                for game in self.neatAi.games:
                     if game.start:
                         self.render_game(win, game, grid)
             else:

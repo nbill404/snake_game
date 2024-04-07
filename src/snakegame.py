@@ -18,11 +18,17 @@ class SnakeGame:
         self.apple = self.snake[0]
         self.randomize_apple()
 
-        self.start = False
+        self.start = True
         self.game_over = False
         self.win = False
+
+        self.distance = 0
+        self.last_apple = 0
         
     def update(self):
+        if not self.start:
+            return
+
         if self.check_win():
             self.start = False
             self.win = True
@@ -34,6 +40,8 @@ class SnakeGame:
 
         self.move()
         self.check_apple()
+
+        self.distance += 1
             
 
     def change_dir(self, index: int):
@@ -147,6 +155,8 @@ class SnakeGame:
             self.snake.append(self.prev_tail)
             self.update_matrix(self.prev_tail, "add")
             self.randomize_apple()
+
+            self.last_apple = self.distance
 
 class SnakePredetermined(SnakeGame):
 

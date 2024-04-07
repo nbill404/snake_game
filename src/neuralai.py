@@ -4,6 +4,7 @@ import numpy as np
 from neuralnetwork import Dense, Tanh
 from snakegame import SnakeGame
 from pathfind import get_ai_move
+from math import dist
 
 
 class NeuralAi:
@@ -11,10 +12,10 @@ class NeuralAi:
         """
         Inputs:
         - 2: Position of apple 
+        - 2: Head of snake
+        - 2: Direction vector
         - 18 * 24 = 432: Position of snake body on grid
-        - 4 : Each direction
         Total = 438
-
 
         Outputs:
         - 4: Up, down, left, right
@@ -27,7 +28,7 @@ class NeuralAi:
         self.output = (-1, 0)
         
         self.network = [
-            Dense(438, 16),
+            Dense(13, 16),
             Tanh(),
             Dense(16, 4),
             Tanh()
@@ -113,35 +114,64 @@ class NeuralAi:
                 layer.bias = np.load('network/bias{}.npy'.format(i))
 
     
+# def convert_x(game: SnakeGame):
+#         x = np.zeros(438)
+#         # Apple
+#         x[0] = game.apple[0]
+#         x[1] = game.apple[1]
+        
+#         # Head
+#         x[2] = game.snake[0][0]
+#         x[3] = game.snake[0][1]
+
+#         # Direction
+#         x[4] = game.dir[0]
+#         x[5] = game.dir[1]
+
+#         offset = 6
+
+#         for pos in game.snake:
+#             x[pos[0] * game.rows + pos[1] + offset] = 1
+
+#         x = np.reshape(x, (1, 438, 1))
+
+#         return x
+
 def convert_x(game: SnakeGame):
-        x = np.zeros(438)
+        x = np.zeros(13)
         # Apple
         x[0] = game.apple[0]
         x[1] = game.apple[1]
         
         # Head
-        x[2] = game.snake[0][0]
-        x[3] = game.snake[0][1]
+        head = game.snake[0]
+        x[2] = head[0]
+        x[3] = head[1]
 
-        # Direction
-        x[4] = game.dir[0]
-        x[5] = game.dir[1]
+        offset = 4
 
-        offset = 6
+        directions = [(-1,-1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
-        for pos in game.snake:
-            x[pos[0] * game.rows + pos[1] + offset] = 1
+        for i, d in enumerate(directions):
+            if game.is_inbounds((head[0] + d[0], head[1] + d[1])):
+                x[offset + i] = game.matrix[head[0] + d[0]][head[1] + d[1]]
+            else:
+                x[offset + i] = 0
 
-        x = np.reshape(x, (1, 438, 1))
+        offset += 8
+
+        x[offset] = dist(game.apple, head)
+
+        x = np.reshape(x, (1, 13, 1))
 
         return x
 
-def convert_y(dir):
+def convert_y(dir : tuple[int]):
     output = np.zeros(4)
     output[convert_dir(dir)] = 1
     return np.reshape(output, (1, 4, 1))
 
-def convert_dir(dir):
+def convert_dir(dir: tuple[int]):
         i = 0
 
         match dir:
@@ -176,7 +206,8 @@ def create_network(neuralAi):
 if __name__ == "__main__":
     game = SnakeGame(18, 24)
     neuralAi = NeuralAi(convert_x(game), convert_y(game.dir))
-    # neuralAi.train()
-    # print(neuralAi.output, neuralAi.error, neuralAi.Y)
+ 
+    neuralAi.train()
+    print(neuralAi.output, neuralAi.error, neuralAi.Y)
 
     create_network(neuralAi)
