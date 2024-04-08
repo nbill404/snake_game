@@ -37,13 +37,14 @@ class NeatAI:
 
     def update(self):
         for game, network in zip(self.games, self.networks):
-            d = network.activate(convert_x(game))
-            game.dir = SnakeGame.directions[get_dir(d)]
-            game.update()
+            if game.start:
+                d = network.activate(convert_x(game))
+                game.dir = SnakeGame.directions[get_dir(d)]
+                game.update()
 
             # Terminate game if it runs too long without an apple
-            if game.distance - game.last_apple > 500:
-                game.start = False
+                if game.distance - game.last_apple >= 500:
+                    game.start = False
 
         if self.ended():
             f = partial(eval_genomes, self.games)
@@ -51,6 +52,22 @@ class NeatAI:
 
             for game in self.games:
                 game.reset()
+
+            # Create new game when population changes
+            diff = len(self.population.population.items()) - len(self.genomes)
+            
+            if abs(diff) > 0:
+                for i in range(abs(diff)):
+                    if diff > 0:
+                        self.games.append(SnakeGame(18, 24))
+                    elif diff < 0:
+                        self.games.pop()
+                
+                self.genomes = self.population.population.items()
+
+                self.networks = []
+                for _, genome in self.genomes:
+                    self.networks.append(neat.nn.FeedForwardNetwork.create(genome, self.config))
 
     def ended(self):
         for game in self.games:
@@ -64,31 +81,44 @@ def get_dir(input):
 
 def eval_genomes(games, genomes, config):
     for game, (_, genome) in zip(games, genomes):
-        # genome.fitness = game.score * 100
-        genome.fitness = 0
-        genome.fitness += game.distance
+        genome.fitness = game.score
+
+        # genome.fitness -= int(game.hit_wall)
+        # genome.fitness -= int(game.hit_self)
         
-        # if game.score > 0:
-        #     genome.fitness += game.distance / game.score
-        # else:
-        #     genome.fitness += 2 / abs(dist(game.apple, game.snake[0]))
 
 def convert_x(game: SnakeGame):
-        x = [0 for _ in range(9)]
+        # Inputs:
+        # x, y position of apple
+        # 4 surrounding blocks 
+        # distance from apple
 
+        x = [0 for _ in range(9)]
+        
         # Head
         head = game.snake[0]
-        offset = 0
 
-        directions = [(-1,-1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+        # position relative to apple
+        x[0] = game.apple[0] - head[0]
+        x[1] = game.apple[1] - head[1]
 
-        for i, d in enumerate(directions):
-            if game.is_inbounds((head[0] + d[0], head[1] + d[1])):
-                x[offset + i] = game.matrix[head[0] + d[0]][head[1] + d[1]]
+        offset = 2
+
+        directions = [(-1, 0), (0, -1), (0, 1), (1, 0)]
+
+        for idx, d in enumerate(directions):
+            i = head[0] + d[0]
+            j = head[1] + d[1]
+
+            if game.is_inbounds((i, j)):
+                if game.apple[0] == i and game.apple[1] == j:
+                    x[offset + idx] = 2
+                else:
+                    x[offset + idx] = game.matrix[i][j]
             else:
-                x[offset + i] = -1
+                x[offset + idx] = -1
 
-        offset += 8
+        offset += 4
 
         x[offset] = dist(game.apple, head)
 

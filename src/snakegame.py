@@ -21,9 +21,12 @@ class SnakeGame:
         self.start = True
         self.game_over = False
         self.win = False
+        self.hit_wall = False
+        self.hit_self = False
 
         self.distance = 0
         self.last_apple = 0
+        
         
     def update(self):
         if not self.start:
@@ -77,11 +80,13 @@ class SnakeGame:
         # Check out of bounds
 
         if not self.is_inbounds(self.snake[0]):
+            self.hit_wall = True
             return False
 
         # Check overlap
         for piece in self.snake:
             if self.matrix[piece[0]][piece[1]] == 2:
+                self.hit_self = True
                 return False
             elif self.matrix[piece[0]][piece[1]] != 0 and self.matrix[piece[0]][piece[1]] != 1:
                 raise Exception("Somethings wrong")
