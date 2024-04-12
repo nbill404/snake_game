@@ -102,6 +102,8 @@ class App:
                     drawables[6] = Textbox((550, 350, 100, 40), "You lose", (255,255,255))
                 elif game.win:
                     drawables[6] = Textbox((550, 350, 100, 40), "You Win!", (255,255,255))
+                else:
+                    drawables [6] = None
 
                 
             # Rendering

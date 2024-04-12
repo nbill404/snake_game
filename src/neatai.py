@@ -91,7 +91,7 @@ def convert_x(game: SnakeGame):
         # 4 surrounding blocks 
         # distance from apple
 
-        x = [0 for _ in range(9)]
+        x = [0 for _ in range(7)]
         
         # Head
         head = game.snake[0]
