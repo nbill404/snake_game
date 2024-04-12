@@ -29,23 +29,23 @@ class App:
         game_tick = 0
 
         grid = Grid(self.rows, self.cols, (240, 80, 800, 600))
-        game = SnakeGame(self.rows, self.cols, 6)
+        game = SnakeGame(self.rows, self.cols)
         self.setup_grid(grid)
         
-        
-        button1 = Button((75, 100, 100, 40), "Start", (245, 33, 120))
-        button2 = Button((75, 200, 100, 40), "A*", (255, 23, 34)) 
-        button3 = Button((75, 300, 100, 40), "Genetic Algorithm", (123, 33, 97))
+        button1 = Button((50, 100, 150, 40), "Play", (245, 33, 120))
+        button2 = Button((50, 200, 150, 40), "A*", (255, 23, 34)) 
+        button3 = Button((50, 300, 150, 40), "Neural Network", (123, 33, 97))
 
         buttons = [button1, button2, button3]
-
-        drawables = [button1, button2, button3, Textbox((540, 20, 0, 0), "Snake Game"), Textbox((1050, 100, 0, 0), "Score: " + str(game.score))]
+        drawables = [grid, button1, button2, button3, Textbox((540, 20, 0, 0), "Snake Game"), Textbox((1050, 100, 0, 0), "Score: " + str(game.score)) , None]
         
-        self.game_mode = 4
+        self.game_mode = 0
+        self.tick_speed = 0
 
         match self.game_mode:
             case 0: # Player control
                 game.start = False
+                self.tick_speed = 250
             case 1: # A* Pathfinding
                 pass
             case 2: # Genetic Algorithm
@@ -58,13 +58,10 @@ class App:
                 self.neatAi = NeatAI()
 
         while self.running:
-            game_tick += clock.tick(60)
+            game_tick += clock.tick(60) # 60 Fps
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
- 
-            if game_tick >= 0: # Game updates every 1/4th second
+            # Main game loop
+            if game_tick >= self.tick_speed: # Game updates every 1/4th second
                 match self.game_mode:
                     case 0:
                         if game.start:
@@ -93,54 +90,49 @@ class App:
                         
                 game_tick = 0
 
+            # Controls
             self.app_controls(game, buttons)
 
             if self.game_mode == 0:
                 self.player_controls(game)
+
+                drawables[5] = Textbox((1050, 100, 0, 0), "Score: " + str(game.score))
     
                 if game.game_over:
-                    print("You lose")
+                    drawables[6] = Textbox((550, 350, 100, 40), "You lose", (255,255,255))
                 elif game.win:
-                    print("You win")
+                    drawables[6] = Textbox((550, 350, 100, 40), "You Win!", (255,255,255))
 
-            self.draw(win, drawables)
-            grid.draw(win)
-
-            if self.game_mode == 2:
-                for game in self.geneticAi.games:
-                    if game.start:
-                        self.render_game(win, game, grid)
-            elif self.game_mode == 4:
-                for game in self.neatAi.games:
-                    if game.start:
-                        self.render_game(win, game, grid)
-            else:
-                self.render_game(win, game, grid)
-
+                
+            # Rendering
+            self.draw(win, drawables, game, grid)
             pygame.display.update()
 
     def app_controls(self, game, buttons):
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_SPACE]:
-            game.start = True
-        elif keys[pygame.K_r]:
-            game.reset()
-
         events = pygame.event.get()
 
         for e in events:
             if e.type == pygame.QUIT:
                 self.running = False
-            elif e.type == pygame.MOUSEBUTTONDOWN:
+            
+            if e.type == pygame.MOUSEBUTTONDOWN:
                 if buttons[0].clicked():
                     self.game_mode = 0
                     game.start = True
+                    self.tick_speed = 250
                 elif buttons[1].clicked():
                     self.game_mode = 1
+                    self.tick_speed = 250
                 elif buttons[2].clicked():
-                    self.game_mode = 2
-                    self.geneticAi = GeneticAI(game.rows, game.cols)
+                    self.game_mode = 4
+                    self.neatAi = NeatAI()
+                    self.tick_speed = 0
+            
+            if e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_SPACE:
+                    game.start = not game.start
+                elif e.key == pygame.K_r:
+                    game.reset()
 
     def player_controls(self, game):  
         keys = pygame.key.get_pressed()
@@ -155,17 +147,29 @@ class App:
             game.change_dir(3)
     
 
-
-
     def setup_grid(self, grid: Grid):
         grid.set_display(vertical=False, horizontal=False)
         grid.set_colour(primary=(19, 133, 13), secondary=(51, 191, 44))
 
-    def draw(self, win : pygame.surface.Surface, drawables) -> None:
+    def draw(self, win: pygame.surface.Surface, drawables, game: SnakeGame, grid: Grid) -> None:
         win.fill(self.bg_colour)
 
-        for e in drawables:
-            e.draw(win)
+
+
+        for obj in drawables:
+            if obj is not None:
+                obj.draw(win)
+
+        if self.game_mode == 2:
+            for game in self.geneticAi.games:
+                if game.start:
+                    self.render_game(win, game, grid)
+        elif self.game_mode == 4:
+            for game in self.neatAi.games:
+                if game.start:
+                    self.render_game(win, game, grid)
+        else:
+            self.render_game(win, game, grid)
 
     def render_game(self, win: pygame.surface.Surface, game: SnakeGame, grid: Grid):
         apple = game.apple

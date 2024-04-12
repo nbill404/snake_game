@@ -82,10 +82,8 @@ def get_dir(input):
 def eval_genomes(games, genomes, config):
     for game, (_, genome) in zip(games, genomes):
         genome.fitness = game.score
-
-        # genome.fitness -= int(game.hit_wall)
-        # genome.fitness -= int(game.hit_self)
-        
+        # genome.fitness += min((game.distance - game.last_apple) / 100, 0.5)
+        # genome.fitness -= int(game.hit_self) * 5
 
 def convert_x(game: SnakeGame):
         # Inputs:
